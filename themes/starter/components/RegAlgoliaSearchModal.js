@@ -277,9 +277,11 @@ export default function AlgoliaSearchModal({ cRef }) {
               onChange={e => handleInputChange(e)}
               className='text-black light:text-gray-200 bg-gray-50 light:bg-gray-600 outline-blue-500 w-full px-4 my-5 py-1 mb-4 border rounded-md'
               ref={inputRef}
-            /> */}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-            aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-            aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            /> */}本平台目前仅支持人工注册，TG在线客服：
+          @kefuyiwang01（8：00-20：00）
+          @kefuliliya（20：00-02：00）
+          您也可以发送邮件至krimmkarla190@gmail.com
+          更多内容请访问PRO+创作者官网pro-plus.top, 感谢支持~
           </div>
           <div>
             {/* <a onClick={onJumpSearchResult}
