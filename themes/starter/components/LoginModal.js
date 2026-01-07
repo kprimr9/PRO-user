@@ -1,29 +1,44 @@
-import { useState, useImperativeHandle } from 'react'
+import { useState, useImperativeHandle, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { useGlobal } from '@/lib/global' // 引入全局钩子
+import { useGlobal } from '@/lib/global'
 
 /**
- * PRO+ 自主寻桩版登录弹窗
+ * PRO+ 自动补全版登录弹窗
+ * 解决了首页没有全量数据的问题
  */
 const LoginModal = (props) => {
   const { cRef } = props
-  const { allPages, posts } = useGlobal() // 关键：直接从全局状态里抓取全量页面
+  const { allPages: globalPages } = useGlobal() // 尝试获取全局数据
   
   const [isOpen, setIsOpen] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [localPages, setLocalPages] = useState([]) // 存储手动抓取的数据
   const router = useRouter()
+
+  // --- 关键逻辑：自动抓取全站索引 ---
+  useEffect(() => {
+    // 如果全局没数据，或者数据是空的，就去抓取搜索索引
+    if (isOpen && (!globalPages || globalPages.length === 0) && localPages.length === 0) {
+      console.log('检测到内存无数据，正在自动拉取全站索引...')
+      fetch('/search.json')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            console.log('全站索引拉取成功，数据条数:', data.length)
+            setLocalPages(data)
+          }
+        })
+        .catch(err => console.error('索引拉取失败:', err))
+    }
+  }, [isOpen, globalPages, localPages])
 
   useImperativeHandle(cRef, () => ({
     openSearch: () => {
       setIsOpen(true)
       setError('')
-      // 调试：看看全局雷达搜到了什么
-      console.log('--- 全局雷达扫描结果 ---')
-      console.log('allPages 数量:', allPages?.length)
-      console.log('posts 数量:', posts?.length)
     }
   }))
 
@@ -32,29 +47,28 @@ const LoginModal = (props) => {
     setError('')
     setLoading(true)
 
-    const inputSlug = String(username).trim()
-    const inputPwd = String(password).trim()
-
-    // 自动判定有效的数据源：全站页面 或 文章列表
-    const pageList = allPages || posts || []
+    // 优先使用全局数据，没有则使用手动抓取的数据
+    const pageList = (globalPages && globalPages.length > 0) ? globalPages : localPages
     
     console.log('--- 登录尝试 ---')
-    console.log('可用数据源总数:', pageList.length)
+    console.log('当前可用账号总数:', pageList.length)
 
     if (pageList.length === 0) {
-      setError('系统数据尚未就绪，请刷新页面或检查配置')
+      setError('系统正在初始化会员数据，请稍等3秒后重试')
       setLoading(false)
       return
     }
 
-    // 在全局数据中查找
+    const inputSlug = String(username).trim()
+    const inputPwd = String(password).trim()
+
     const matchedUser = pageList.find(p => {
       const dbSlug = String(p.slug || '').trim()
       const dbPwd = String(p.password || '').trim()
       
-      // 这里的逻辑依然是明文对比，方便你现在排查
+      // 辅助调试：如果账号对上了，打印一下
       if (dbSlug === inputSlug) {
-          console.log('账号匹配，正在对比密码...')
+          console.log('找到账号，正在对比密码...')
           console.log('数据库密码:', dbPwd)
       }
       return dbSlug === inputSlug && dbPwd === inputPwd
@@ -81,7 +95,7 @@ const LoginModal = (props) => {
             type="text"
             placeholder="账号"
             required
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700"
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700 transition-all placeholder:text-gray-600"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
@@ -89,16 +103,16 @@ const LoginModal = (props) => {
             type="password"
             placeholder="密码"
             required
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700"
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700 transition-all placeholder:text-gray-600"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           {error && <p className="text-red-500 text-xs text-center">{error}</p>}
           <button type="submit" disabled={loading} className="w-full py-3 bg-white text-black font-bold rounded-xl active:scale-95 transition-all">
-            {loading ? '正在进入...' : '立即登录'}
+            {loading ? '身份验证中...' : '确认登录'}
           </button>
         </form>
-        <button onClick={() => setIsOpen(false)} className="w-full mt-6 text-gray-500 text-xs">取消返回</button>
+        <button onClick={() => setIsOpen(false)} className="w-full mt-6 text-gray-500 text-xs hover:text-gray-300">取消返回</button>
       </div>
     </div>
   )
