@@ -15,32 +15,42 @@ const LoginModal = (props) => {
     openSearch: () => {
       setIsOpen(true)
       setError('')
+      console.log('弹窗已打开。当前 props 内容:', props)
     }
   }))
 
   const handleLogin = (e) => {
-    e?.preventDefault()
+    e.preventDefault()
+    // 强制打印，不放过任何信息
+    alert('正在验证，请查看控制台日志')
+    
     setError('')
     setLoading(true)
 
     const pageList = allPages || posts || []
-    const inputSlug = String(username).trim()
-    const inputPwd = String(password).trim()
+    console.log('--- 登录校验开始 ---')
+    console.log('数据源长度:', pageList.length)
+    console.log('用户输入:', { username, password })
 
-    // 使用我们调包后的 member_pwd 进行比对
     const matchedUser = pageList.find(p => {
       const dbSlug = String(p.slug || '').trim()
-      const dbPwd = String(p.member_pwd || '').trim()
-      return dbSlug === inputSlug && dbPwd === inputPwd
+      const dbPwd = String(p.member_pwd || '').trim() // 使用我们的隐藏变量
+      
+      if (dbSlug === username.trim()) {
+          console.log('账号匹配成功！数据库密码为:', dbPwd)
+          return dbPwd === password.trim()
+      }
+      return false
     })
 
     if (matchedUser) {
-      console.log('登录成功，直接进入页面')
-      setIsOpen(false)
+      console.log('全部匹配成功，准备跳转')
+      localStorage.setItem('is_logged_in', 'true') // 存个标记
       window.location.href = `/${matchedUser.slug}`
     } else {
       setLoading(false)
       setError('账号或密码不正确')
+      console.error('匹配失败：未在数据集中找到该账号密码组合')
     }
   }
 
@@ -56,10 +66,10 @@ const LoginModal = (props) => {
           <input type="password" placeholder="密码" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700" value={password} onChange={(e) => setPassword(e.target.value)} />
           {error && <p className="text-red-500 text-xs text-center">{error}</p>}
           <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-bold rounded-xl active:scale-95 transition-all">
-            {loading ? '正在验证...' : '确认登录'}
+            确认登录
           </button>
         </form>
-        <button onClick={() => setIsOpen(false)} className="w-full mt-6 text-gray-500 text-xs text-center cursor-pointer">返回首页</button>
+        <button onClick={() => setIsOpen(false)} className="w-full mt-6 text-gray-500 text-xs text-center">返回首页</button>
       </div>
     </div>
   )
