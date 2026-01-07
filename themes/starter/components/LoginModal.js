@@ -1,5 +1,8 @@
 import { useState, useImperativeHandle, useEffect } from 'react'
 
+/**
+ * PRO+ 极速登录弹窗 (定稿版)
+ */
 const LoginModal = (props) => {
   const { cRef, allPages, posts } = props
   const [isOpen, setIsOpen] = useState(false)
@@ -9,48 +12,53 @@ const LoginModal = (props) => {
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useImperativeHandle(cRef, () => ({
     openSearch: () => {
       setIsOpen(true)
       setError('')
-      console.log('弹窗已打开。当前 props 内容:', props)
     }
   }))
 
   const handleLogin = (e) => {
     e.preventDefault()
-    // 强制打印，不放过任何信息
-    alert('正在验证，请查看控制台日志')
-    
     setError('')
     setLoading(true)
 
+    // 数据源自动识别
     const pageList = allPages || posts || []
-    console.log('--- 登录校验开始 ---')
-    console.log('数据源长度:', pageList.length)
-    console.log('用户输入:', { username, password })
+    const inputSlug = String(username).trim()
+    const inputPwd = String(password).trim()
 
+    console.log('--- 正在执行登录校验 ---')
+    console.log('可用数据条数:', pageList.length)
+
+    // 在数据中寻找
     const matchedUser = pageList.find(p => {
       const dbSlug = String(p.slug || '').trim()
-      const dbPwd = String(p.member_pwd || '').trim() // 使用我们的隐藏变量
+      const dbPwd = String(p.member_pwd || '').trim() // 使用我们自定义的 member_pwd
       
-      if (dbSlug === username.trim()) {
-          console.log('账号匹配成功！数据库密码为:', dbPwd)
-          return dbPwd === password.trim()
+      if (dbSlug === inputSlug) {
+        console.log('账号匹配成功，对比密码...')
+        console.log('数据库内密码:', dbPwd)
+        console.log('用户输入密码:', inputPwd)
+        return dbPwd === inputPwd
       }
       return false
     })
 
     if (matchedUser) {
-      console.log('全部匹配成功，准备跳转')
-      localStorage.setItem('is_logged_in', 'true') // 存个标记
+      console.log('登录成功，正在跳转...')
+      setIsOpen(false)
+      // 使用 window.location.href 跳转，不带任何残留状态
       window.location.href = `/${matchedUser.slug}`
     } else {
       setLoading(false)
       setError('账号或密码不正确')
-      console.error('匹配失败：未在数据集中找到该账号密码组合')
+      console.error('校验未通过：账号不存在或密码错误')
     }
   }
 
@@ -58,18 +66,58 @@ const LoginModal = (props) => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-      <div className="relative w-full max-w-sm bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl p-8 overflow-hidden">
-        <div className="absolute top-0 left-0 h-1.5 w-full bg-red-700"></div>
-        <h3 className="text-2xl font-bold text-white text-center mb-8">会员登录</h3>
+      <div className="relative w-full max-w-sm bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl p-8 overflow-hidden font-sans">
+        <div className="absolute top-0 left-0 h-1 w-full bg-red-700"></div>
+        
+        <div className="text-center mb-8">
+          <h3 className="text-2xl font-bold text-white tracking-widest">会员登录</h3>
+          <p className="text-gray-500 text-[10px] mt-2 uppercase tracking-widest">Member Authentication</p>
+        </div>
+
         <form onSubmit={handleLogin} className="space-y-6">
-          <input type="text" placeholder="账号" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input type="password" placeholder="密码" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700" value={password} onChange={(e) => setPassword(e.target.value)} />
-          {error && <p className="text-red-500 text-xs text-center">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-bold rounded-xl active:scale-95 transition-all">
-            确认登录
+          <div>
+            <input
+              type="text"
+              placeholder="请输入账号"
+              required
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700 transition-all placeholder:text-gray-600"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <input
+              type="password"
+              placeholder="请输入密码"
+              required
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700 transition-all placeholder:text-gray-600"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-500 text-xs text-center font-bold bg-red-500/10 py-2 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 bg-white text-black font-extrabold rounded-xl hover:bg-red-700 hover:text-white transition-all transform active:scale-95"
+          >
+            {loading ? '正在载入空间...' : '立即登录'}
           </button>
         </form>
-        <button onClick={() => setIsOpen(false)} className="w-full mt-6 text-gray-500 text-xs text-center">返回首页</button>
+
+        <button 
+          onClick={() => setIsOpen(false)}
+          className="w-full mt-6 text-gray-500 text-xs text-center hover:text-white transition-colors"
+        >
+          返回首页
+        </button>
       </div>
     </div>
   )
