@@ -1,25 +1,31 @@
 import { useState, useImperativeHandle, useEffect } from 'react'
+import { useRouter } from 'next/router'
 
 const LoginModal = (props) => {
   const { cRef, allPages, posts } = props
   const [isOpen, setIsOpen] = useState(false)
+  const [isAnimate, setIsAnimate] = useState(false) // 用于控制动效
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => { setMounted(true) }, [])
-
+  // 处理动效开启
   useImperativeHandle(cRef, () => ({
-    openSearch: () => {
+    openModal: () => {
       setIsOpen(true)
+      setTimeout(() => setIsAnimate(true), 10)
       setError('')
     }
   }))
 
+  const closeModal = () => {
+    setIsAnimate(false)
+    setTimeout(() => setIsOpen(false), 300)
+  }
+
   const handleLogin = (e) => {
-    e.preventDefault()
+    e?.preventDefault()
     setError('')
     setLoading(true)
 
@@ -27,23 +33,13 @@ const LoginModal = (props) => {
     const inputSlug = username.trim()
     const inputPwd = password.trim()
 
-    console.log('--- 登录尝试 ---')
-    console.log('可用数据条数:', pageList.length)
-
     const matchedUser = pageList.find(p => {
       const dbSlug = String(p.slug || '').trim()
-      const dbPwd = String(p.member_pwd || '').trim()
-      
-      if (dbSlug === inputSlug) {
-          console.log('匹配到账号，数据库密码:', dbPwd)
-          return dbPwd === inputPwd
-      }
-      return false
+      const dbPwd = String(p.member_pwd || p.password || '').trim()
+      return dbSlug === inputSlug && dbPwd === inputPwd
     })
 
     if (matchedUser) {
-      console.log('验证成功，正在跳转...')
-      setIsOpen(false)
       window.location.href = `/${matchedUser.slug}`
     } else {
       setLoading(false)
@@ -51,20 +47,66 @@ const LoginModal = (props) => {
     }
   }
 
-  if (!mounted || !isOpen) return null
+  if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md transition-all">
-      <div className="relative w-full max-w-sm bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl p-8 overflow-hidden">
-        <div className="absolute top-0 left-0 h-1 w-full bg-red-700"></div>
-        <h3 className="text-2xl font-bold text-white text-center mb-8 tracking-widest">会员登录</h3>
-        <form onSubmit={handleLogin} className="space-y-6">
-          <input type="text" placeholder="账号" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input type="password" placeholder="密码" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-red-700" value={password} onChange={(e) => setPassword(e.target.value)} />
-          {error && <p className="text-red-500 text-xs text-center">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-extrabold rounded-xl active:scale-95 transition-all">确认进入</button>
+    <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-300 ${isAnimate ? 'bg-black/80 backdrop-blur-md' : 'bg-black/0 backdrop-blur-none'}`}>
+      <div 
+        className={`relative w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_24px_48px_rgba(0,0,0,0.5)] p-8 transition-all duration-300 transform ${isAnimate ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}
+      >
+        <div className="text-center mb-10">
+          <h3 className="text-2xl font-semibold text-white tracking-tight">会员登录</h3>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="group">
+            <input
+              type="text"
+              placeholder="账号"
+              required
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-lg text-white outline-none transition-all duration-200 focus:border-white/30 focus:bg-white/[0.05] placeholder:text-gray-600"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <input
+              type="password"
+              placeholder="密码"
+              required
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-lg text-white outline-none transition-all duration-200 focus:border-white/30 focus:bg-white/[0.05] placeholder:text-gray-600"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <div className="flex justify-end px-1">
+              <a 
+                href="#" // 这里后续填入你的找回密码链接
+                onClick={(e) => { e.preventDefault(); alert('请联系管理员找回密码') }}
+                className="text-xs text-gray-500 hover:text-white transition-colors"
+              >
+                忘记密码？
+              </a>
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 text-xs text-center py-2">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-white text-black font-bold rounded-lg transition-all duration-300 hover:bg-gray-200 active:scale-[0.98] shadow-lg disabled:opacity-50"
+          >
+            {loading ? '正在进入...' : '确认进入'}
+          </button>
         </form>
-        <button onClick={() => setIsOpen(false)} className="w-full mt-6 text-gray-500 text-xs text-center">返回首页</button>
+
+        <button 
+          onClick={closeModal}
+          className="w-full mt-6 text-gray-500 text-xs hover:text-gray-300 transition-colors"
+        >
+          返回首页
+        </button>
       </div>
     </div>
   )
