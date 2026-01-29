@@ -31,9 +31,9 @@ const RegModal = ({ cRef }) => {
         {/* 这里你可以自由编辑说明文字 */}
         <div className="space-y-4 text-gray-400 text-sm leading-relaxed">
           <p>1. 本平台暂不支持自行注册。</p>
-          <p>2. 如需注册账号，请通过页面右下角聊天工具联系管理员</p>
+          <p>2. 如需注册账号，请通过页面右下角聊天工具联系我们</p>
           <div className="bg-white/5 p-4 rounded-lg border border-white/5 text-gray-300">
-             更多支持请访问：<span className="text-white font-mono">pro-plus.top</span>
+             更多支持请访问：<span className="text-white font-mono">https://pro-plus.top</span>
           </div>
         </div>
 
